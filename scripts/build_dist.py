@@ -27,7 +27,7 @@ SCRIPT_FILES = ["v2mm.py", "vcproxy.py", "render_mindmap.py", "setup_check.py",
                 "bootstrap.ps1", "build_dist.py", "build_bundle.ps1",
                 "check_sync.py", "make_gif.ps1", "release.ps1"]
 ROOT_FILES = ["README.md", "LICENSE", ".gitignore", "GITHUB-GUIDE.md",
-              "维护必读.md", "RETROSPECTIVE.md"]
+              "维护必读.md"]
 
 
 def log(m):

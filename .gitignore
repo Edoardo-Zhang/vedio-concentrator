@@ -38,3 +38,6 @@ venv/
 Thumbs.db
 desktop.ini
 *.log
+
+# 项目总结只留本地，不进仓库
+RETROSPECTIVE.md

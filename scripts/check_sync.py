@@ -60,7 +60,6 @@ PAIR = ["Git仓库", "打包源"]
 # 仓库里应当存在的全部文件（相对仓库根）。新加了文件记得同步加到这里。
 PAIR_FILES = [
     "README.md", "LICENSE", ".gitignore", "GITHUB-GUIDE.md", "维护必读.md",
-    "RETROSPECTIVE.md",
     "更新.cmd",
     "skill/SKILL.md", "skill/reference.md",
     "scripts/v2mm.py", "scripts/vcproxy.py", "scripts/render_mindmap.py",
