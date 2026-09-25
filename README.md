@@ -1,6 +1,16 @@
 # vedio-concentrator
 
+[![Release](https://img.shields.io/github/v/release/Edoardo-Zhang/vedio-concentrator?color=success&label=release)](https://github.com/Edoardo-Zhang/vedio-concentrator/releases)
+[![License](https://img.shields.io/github/license/Edoardo-Zhang/vedio-concentrator)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D4)](#一安装)
+[![Sites](https://img.shields.io/badge/%E7%AB%99%E7%82%B9-yt--dlp%201000%2B-orange)](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
+
 > 给一个视频链接，自动**下载视频 → 提取字幕（没有就本地语音转写）→ 生成可交互的脑图**。
+
+![脑图效果预览](docs/mindmap-preview.png)
+
+*实际产出：一个可缩放、可折叠、能离线打开的单文件 HTML 脑图。*
 
 `vedio-concentrator` 是一个 Agent Skill（配合几个命令行脚本）。装好之后，在 Codex / DSH 这类支持 Skill 的
 Agent 里直接说「把这个视频做成脑图 https://...」即可；也可以完全脱离 Agent，用命令行跑。
@@ -23,6 +33,7 @@ Agent 里直接说「把这个视频做成脑图 https://...」即可；也可�
 | 磁盘 | 约 2 GB（其中 ASR 模型 1.5 GB） |
 | 网络 | 首次安装需联网下载模型和 ffmpeg |
 | 显卡 | 可选。有 NVIDIA 显卡会快 20 倍以上，没有就用 CPU（依然可用） |
+
 
 ### 方式 A：下载 zip 一键安装（推荐）
 

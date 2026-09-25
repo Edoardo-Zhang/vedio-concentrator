@@ -200,9 +200,11 @@ window.addEventListener('error', function (e) {
   }
   var transformer = new markmap.Transformer();
   var res = transformer.transform(md);
+  // ?static=1 关掉所有动画，供截图/自动化使用
+  var STATIC = /[?&]static=1/.test(location.search);
   var mm = markmap.Markmap.create('#mm', {
     autoFit: false,
-    duration: 300,
+    duration: STATIC ? 0 : 300,
     initialExpandLevel: cfg.expand,
     spacingVertical: 8,
     spacingHorizontal: 110,
@@ -244,6 +246,11 @@ window.addEventListener('error', function (e) {
     var tx = (W - b.width * k) / 2 - b.x * k;
     var ty = (H - b.height * k) / 2 - b.y * k;
     var t = d3.zoomIdentity.translate(tx, ty).scale(k);
+    // ?static=1：跳过动画直接定稿。截图/自动化必须用它——
+    // 无头浏览器在 d3 过渡跑完前就会抓帧，否则会拍到空白。
+    if (STATIC) {
+      try { svg.call(mm.zoom.transform, t); return; } catch (e2) {}
+    }
     try {
       mm.transition(svg).call(mm.zoom.transform, t);
     } catch (e3) {
@@ -253,7 +260,7 @@ window.addEventListener('error', function (e) {
   function doFit() {
     if (!res.root) return;
     mm.setData(res.root);
-    setTimeout(fitToContent, 400);
+    setTimeout(fitToContent, STATIC ? 50 : 400);
   }
   window.mmFit = doFit;
   window.mmZoom = function (k) { try { mm.rescale(k); } catch (e) {} };

@@ -15,6 +15,12 @@ video_out/
 transcript.txt
 meta.json
 mindmap.html
+docs/*.html
+
+# 演示素材说明：
+#   docs/demo-outline.md      保留（演示输入，很小）
+#   docs/mindmap-preview.png  保留（README 用的截图）
+#   docs/demo-mindmap.*       是本机跑 render_mindmap.py 生成的，不进仓库
 
 # Python
 __pycache__/

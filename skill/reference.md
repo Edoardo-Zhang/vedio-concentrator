@@ -102,6 +102,43 @@ python v2mm.py --check <dir>
 | `--beam-size` | 5 | 1 更快，5 更准 |
 | `--prompt` | — | 初始提示，喂专有名词能明显降错字 |
 
+## 二之二、render_mindmap.py 参数与截图
+
+```
+python render_mindmap.py --md outline.md --out mindmap.html [选项]
+python render_mindmap.py --selfcheck
+```
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `--md` | — | 输入大纲 |
+| `--out` | — | 输出 HTML 路径 |
+| `--title` | 取文件名 | 页面标题 |
+| `--theme` | `auto` | `auto` / `light` / `dark` |
+| `--initial-expand` | 3 | 默认展开层级，`-1` 全部展开 |
+| `--selfcheck` | — | 只检查 markmap 资源是否齐全 |
+
+### 截图 / 自动化：`?static=1`
+
+渲染出来的 HTML 支持一个 URL 参数：`mindmap.html?static=1`
+
+它关掉所有动画（d3 过渡 + markmap 布局动画），让脑图**一次性定型**。
+无头浏览器在过渡跑完前就会抓帧，不加这个参数**会拍到空白图**。
+
+```powershell
+# 稳定的截图流程
+python -m http.server 8099 --directory .            # file:// 下无头截图不稳，必须走 HTTP
+msedge --headless=new --disable-gpu --hide-scrollbars `
+  --virtual-time-budget=8000 --window-size=1600,900 `
+  --screenshot=preview.png "http://127.0.0.1:8099/mindmap.html?static=1"
+```
+
+两个实测结论：
+- `file://` 协议下截图时好时坏，**务必用本地 HTTP 服务**
+- `--virtual-time-budget` 不是越大越好（实测 30000 出图、60000 反而空白）；
+  配合 `?static=1` 用 8000 稳定复现
+
+
 ## 三、产物说明
 
 | 文件 | 内容 |

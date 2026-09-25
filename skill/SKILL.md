@@ -137,6 +137,19 @@ python scripts\render_mindmap.py --md outline.md --out mindmap.html --title "<�
 Produces a self-contained interactive HTML (pan, zoom, fold/unfold, offline). If
 `--theme dark` is passed the page uses a dark palette. Report the absolute path to the user.
 
+**Need a PNG instead of HTML** (for a chat preview, a README, a slide)? Screenshot it — but the page
+animates on load, and headless browsers capture before the animation settles, giving a blank image.
+Append `?static=1` to the URL to disable animation, and serve over HTTP rather than `file://`:
+
+```powershell
+python -m http.server 8099 --directory <outdir>
+msedge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=8000 `
+  --window-size=1600,900 --screenshot=preview.png "http://127.0.0.1:8099/mindmap.html?static=1"
+```
+
+Without `?static=1` the screenshot is usually blank; do not "fix" that by raising
+`--virtual-time-budget` — it does not help.
+
 ## Troubleshooting
 
 | Symptom | Fix |
