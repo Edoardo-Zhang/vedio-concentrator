@@ -66,7 +66,7 @@ PAIR_FILES = [
     "scripts/setup_check.py", "scripts/install_runtime.py", "scripts/setup.py",
     "scripts/install.cmd", "scripts/install.ps1", "scripts/bootstrap.ps1",
     "scripts/build_dist.py", "scripts/build_bundle.ps1", "scripts/check_sync.py",
-    "scripts/make_gif.ps1",
+    "scripts/make_gif.ps1", "scripts/release.ps1",
     "docs/demo-outline.md", "docs/mindmap-preview.gif",
 ]
 
