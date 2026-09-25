@@ -1,0 +1,32 @@
+# 运行时产物与本地测试，不进仓库
+_test/
+dist/
+out/
+video_out/
+*.mp4
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.srt
+*.vtt
+*.json3
+transcript.txt
+meta.json
+mindmap.html
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.log
