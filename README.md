@@ -8,9 +8,9 @@
 
 > 给一个视频链接，自动**下载视频 → 提取字幕（没有就本地语音转写）→ 生成可交互的脑图**。
 
-![脑图效果预览](docs/mindmap-preview.png)
+![脑图生成效果](docs/mindmap-preview.gif)
 
-*实际产出：一个可缩放、可折叠、能离线打开的单文件 HTML 脑图。*
+*一个 30 分钟的视频，压成一张可以点开细看的脑图。上图是逐层展开的实际效果。*
 
 `vedio-concentrator` 是一个 Agent Skill（配合几个命令行脚本）。装好之后，在 Codex / DSH 这类支持 Skill 的
 Agent 里直接说「把这个视频做成脑图 https://...」即可；也可以完全脱离 Agent，用命令行跑。

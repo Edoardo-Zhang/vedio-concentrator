@@ -138,6 +138,47 @@ msedge --headless=new --disable-gpu --hide-scrollbars `
 - `--virtual-time-budget` 不是越大越好（实测 30000 出图、60000 反而空白）；
   配合 `?static=1` 用 8000 稳定复现
 
+### URL 参数一览
+
+渲染出来的 HTML 支持三个 URL 参数，专供截图 / 录 GIF，不用重新渲染文件：
+
+| 参数 | 作用 | 例子 |
+|---|---|---|
+| `?static=1` | 关掉所有动画，一次性定型 | `mindmap.html?static=1` |
+| `?expand=N` | 覆盖展开层级，`-1` 全部展开 | `mindmap.html?static=1&expand=2` |
+| `?theme=dark` | 覆盖主题 | `mindmap.html?theme=dark` |
+
+### 演示 GIF：make_gif.ps1
+
+把脑图"逐层展开"的过程做成 GIF，适合放 README：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\make_gif.ps1
+```
+
+原理：用 `?static=1&expand=N` 逐层抓 PNG 帧 → ffmpeg 调色板法合成 GIF。
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `-Html` | `docs\demo-mindmap.html` | 源脑图 |
+| `-Out` | `docs\mindmap-preview.gif` | 输出 |
+| `-Width` / `-Height` | 1200 / 675 | 16:9 |
+| `-HoldMs` | 900 | 每帧停留 |
+| `-LastHoldMs` | 2200 | 末帧多停 |
+| `-Fps` | 6 | 帧率 |
+| `-KeepFrames` | — | 保留中间帧便于排查 |
+
+三个坑（都已在脚本里处理）：
+
+1. **帧数别贪多**：`expand=-1` 和"实际最大层数"画面完全相同，两个都放会白多一帧。
+   本演示大纲 4 层，所以用 `@(1, 2, 3, -1)`。改大纲后要按实际深度调 `$levels`。
+2. **Edge 写文件是异步的**：命令返回后 PNG 可能还没落盘，必须轮询等待再校验，
+   否则会误报"抓帧失败"（帧其实是好的）。
+3. **原生命令的 stderr 会中断脚本**：Edge 和 ffmpeg 都往 stderr 写正常日志，
+   而 PowerShell 5.1 把原生命令的 stderr 当错误记录，配合 `$ErrorActionPreference='Stop'`
+   会直接终止脚本。脚本里用 `Invoke-Quiet` 封装（内部 `2>$null`）解决。
+
+
 
 ## 三、产物说明
 

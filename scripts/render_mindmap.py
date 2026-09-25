@@ -200,8 +200,16 @@ window.addEventListener('error', function (e) {
   }
   var transformer = new markmap.Transformer();
   var res = transformer.transform(md);
-  // ?static=1 关掉所有动画，供截图/自动化使用
-  var STATIC = /[?&]static=1/.test(location.search);
+  // URL 参数（供截图/录 GIF 用，比重新渲染 HTML 更方便）：
+  //   ?static=1    关掉动画，一次性定型（无头截图必须）
+  //   ?expand=N    覆盖默认展开层级，-1 全部展开
+  //   ?theme=dark  覆盖主题
+  var qs = location.search || "";
+  var STATIC = /[?&]static=1/.test(qs);
+  var qExpand = /[?&]expand=(-?\d+)/.exec(qs);
+  if (qExpand) { cfg.expand = parseInt(qExpand[1], 10); }
+  var qTheme = /[?&]theme=(light|dark|auto)/.exec(qs);
+  if (qTheme) { cfg.theme = qTheme[1]; }
   var mm = markmap.Markmap.create('#mm', {
     autoFit: false,
     duration: STATIC ? 0 : 300,

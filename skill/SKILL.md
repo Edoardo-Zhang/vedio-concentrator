@@ -150,6 +150,18 @@ msedge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=8000
 Without `?static=1` the screenshot is usually blank; do not "fix" that by raising
 `--virtual-time-budget` — it does not help.
 
+**Want an animated demo instead** (README hero, slide, share)? Render a mind map, then:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\make_gif.ps1 -Html docs\demo-mindmap.html
+```
+
+It grabs one frame per unfold level via `?expand=N&static=1` and stitches them with ffmpeg
+(palette method, ~120 KB for a 4-stage 1200x675 clip). Two traps it already handles: keep
+`$levels` in that script in sync with the outline's real depth (`-1` and the max level look
+identical, so including both wastes a frame), and never call ffmpeg/Edge directly in a script
+with `$ErrorActionPreference='Stop'` — their stderr output aborts PowerShell.
+
 ## Troubleshooting
 
 | Symptom | Fix |

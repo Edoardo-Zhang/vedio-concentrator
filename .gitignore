@@ -15,12 +15,14 @@ video_out/
 transcript.txt
 meta.json
 mindmap.html
-docs/*.html
 
-# 演示素材说明：
-#   docs/demo-outline.md      保留（演示输入，很小）
-#   docs/mindmap-preview.png  保留（README 用的截图）
-#   docs/demo-mindmap.*       是本机跑 render_mindmap.py 生成的，不进仓库
+# docs/ 里只提交演示素材，本地生成的大文件不进仓库：
+#   docs/demo-outline.md      提交（演示输入，很小）
+#   docs/mindmap-preview.gif  提交（README 用的演示动画）
+#   docs/demo-mindmap.html    忽略（本机 render_mindmap.py 生成，1 MB）
+#   docs/_gif_frames/         忽略（make_gif.ps1 的临时帧）
+docs/*.html
+docs/_gif_frames/
 
 # Python
 __pycache__/

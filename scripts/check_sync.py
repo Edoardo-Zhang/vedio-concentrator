@@ -66,6 +66,8 @@ PAIR_FILES = [
     "scripts/setup_check.py", "scripts/install_runtime.py", "scripts/setup.py",
     "scripts/install.cmd", "scripts/install.ps1", "scripts/bootstrap.ps1",
     "scripts/build_dist.py", "scripts/build_bundle.ps1", "scripts/check_sync.py",
+    "scripts/make_gif.ps1",
+    "docs/demo-outline.md", "docs/mindmap-preview.gif",
 ]
 
 # 「已安装」那份是子集：只包含真正要跑的脚本和 skill 文档。

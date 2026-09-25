@@ -24,7 +24,8 @@ VERSION = "1.0.1"
 DOC_FILES = ["SKILL.md", "reference.md"]
 SCRIPT_FILES = ["v2mm.py", "vcproxy.py", "render_mindmap.py", "setup_check.py",
                 "install_runtime.py", "setup.py", "install.cmd", "install.ps1",
-                "bootstrap.ps1", "build_dist.py"]
+                "bootstrap.ps1", "build_dist.py", "build_bundle.ps1",
+                "check_sync.py", "make_gif.ps1"]
 ROOT_FILES = ["README.md", "LICENSE", ".gitignore", "GITHUB-GUIDE.md"]
 
 
