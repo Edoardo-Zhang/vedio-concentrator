@@ -58,10 +58,66 @@ function Invoke-Capture {
     return ($out | Out-String).Trim()
 }
 
+# 带重试的 GitHub API 调用。
+# 为什么需要：到 GitHub 的连接经常偶发 TLS 握手失败（代理切换/网络抖动），
+# 一次失败就中断发版体验很差。只重试网络类错误，4xx 业务错误直接抛。
+function Invoke-Api {
+    param(
+        [string]$Method = "GET",
+        [string]$Uri,
+        [hashtable]$Headers,
+        $Body = $null,           # byte[] 或 $null
+        [string]$ContentType = "application/json; charset=utf-8",
+        [int]$TimeoutSec = 60,
+        [int]$Tries = 5
+    )
+    $lastErr = $null
+    for ($i = 1; $i -le $Tries; $i++) {
+        try {
+            $params = @{
+                Method      = $Method
+                Uri         = $Uri
+                Headers     = $Headers
+                TimeoutSec  = $TimeoutSec
+                ErrorAction = "Stop"
+            }
+            if ($null -ne $Body) {
+                $params["Body"] = $Body
+                $params["ContentType"] = $ContentType
+            }
+            return Invoke-RestMethod @params
+        } catch {
+            $lastErr = $_
+            $status = 0
+            try { $status = [int]$_.Exception.Response.StatusCode } catch { $status = 0 }
+            if ($status -ge 400 -and $status -lt 500) { throw }   # 业务错误，重试无意义
+            if ($i -lt $Tries) {
+                $wait = 1.5 * $i
+                Write-Host ("          （网络错误，第 " + $i + " 次重试，等 " + $wait + "s）") -ForegroundColor DarkYellow
+                Start-Sleep -Milliseconds ([int]($wait * 1000))
+            }
+        }
+    }
+    throw $lastErr
+}
+
 # ---------------------------------------------------------- 版本号规范化
 $Version = $Version.TrimStart("v", "V")
 if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     Die ("版本号格式不对: " + $Version + "（应形如 1.0.2）")
+}
+
+# 说明文件必须在这里就读进来！
+# 原因：第 3 步的 build_dist.py 会清空整个 dist/ 目录。如果说明文件放在 dist/ 里
+# （很自然的做法），到第 5 步再读就已经被删了，脚本会静默回退到"自动收集提交"，
+# 于是发布出去的说明是错的。这个坑实际踩过一次。
+$NotesFromFile = ""
+if ($NotesFile) {
+    if (-not (Test-Path $NotesFile)) {
+        Die ("-NotesFile 指定的文件不存在: " + $NotesFile)
+    }
+    $NotesFromFile = [System.IO.File]::ReadAllText($NotesFile, [System.Text.Encoding]::UTF8)
+    if (-not $NotesFromFile.Trim()) { Die ("-NotesFile 文件是空的: " + $NotesFile) }
 }
 $Tag = "v" + $Version
 if (-not $Title) { $Title = $Tag }
@@ -77,8 +133,10 @@ Write-Host "==============================================" -ForegroundColor Cya
 Step 1 $TOTAL "前置检查"
 
 # 令牌
-$credRaw = "protocol=https`nhost=github.com`n`n" | git credential fill 2>&1
-$Token = ($credRaw | Select-String -Pattern '^password=') -replace '^password=',''
+$credRaw = ("protocol=https`nhost=github.com`n`n" | & git credential fill 2>$null | Out-String)
+# 注意 .Trim()：Out-String 的行尾是 \r\n，正则会把 \r 一起捕获，
+# 带 \r 的令牌发给 API 会得到莫名其妙的 401 或 404。
+$Token = (($credRaw -split "`n" | Where-Object { $_ -match '^password=' }) -replace '^password=','').Trim()
 if (-not $Token) { Die "取不到 GitHub 凭据。先在 GitHub Desktop 里登录，或执行一次 git push 让它记住凭据。" }
 $Hdr = @{ Authorization = "token $Token"; "User-Agent" = "vc-release" }
 
@@ -105,7 +163,7 @@ if ($dirty.Trim()) {
 
 # tag 是否已存在
 try {
-    $null = Invoke-RestMethod -Uri "$Api/git/ref/tags/$Tag" -Headers $Hdr -TimeoutSec 30
+    $null = Invoke-Api -Uri "$Api/git/ref/tags/$Tag" -Headers $Hdr -TimeoutSec 30
     Die ("tag " + $Tag + " 在 GitHub 上已存在。换个版本号，或先去网页删掉它。")
 } catch {
     if ($_.Exception.Response.StatusCode.value__ -eq 404) {
@@ -154,8 +212,15 @@ Step 3 $TOTAL "打包 / 同步本机 / 推送代码"
 $bb = Join-Path $scriptDir "build_bundle.ps1"
 if (-not (Test-Path $bb)) { Die "找不到 build_bundle.ps1" }
 $commitMsg = "发布 " + $Tag + "：" + $Title
-Invoke-Quiet { & powershell -NoProfile -ExecutionPolicy Bypass -File $bb -Message $commitMsg }
-if ($LASTEXITCODE -ne 0) { Die "build_bundle.ps1 失败，已中止" }
+# 用 Start-Process 而不是调用运算符：子进程里的 git push 会往 stderr 写正常日志
+# （"To https://..."、"branch ... set up to track"），而 PowerShell 5.1 把原生命令的
+# stderr 当错误记录，配合 $ErrorActionPreference='Stop' 会在中途打断本脚本。
+# Start-Process 让子进程完全独立，stderr 不会污染父进程，退出码用 ExitCode 取。
+$proc = Start-Process -FilePath "powershell" `
+    -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$bb`"", "-Message", "`"$commitMsg`"" `
+    -NoNewWindow -Wait -PassThru
+if ($proc.ExitCode -ne 0) { Die ("build_bundle.ps1 失败（退出码 " + $proc.ExitCode + "），已中止") }
+Ok "打包 / 同步 / 推送 完成"
 
 $bundle = Join-Path $root "dist\vedio-concentrator-bundle.zip"
 if (-not (Test-Path $bundle)) { Die ("没生成 " + $bundle) }
@@ -180,9 +245,8 @@ Info ("HEAD = " + $headSha.Substring(0, 12))
 
 $tagBody = @{ ref = "refs/tags/$Tag"; sha = $headSha } | ConvertTo-Json -Compress
 try {
-    $null = Invoke-RestMethod -Method Post -Uri "$Api/git/refs" -Headers $Hdr `
-        -Body ([System.Text.Encoding]::UTF8.GetBytes($tagBody)) `
-        -ContentType "application/json; charset=utf-8" -TimeoutSec 60
+    $null = Invoke-Api -Method Post -Uri "$Api/git/refs" -Headers $Hdr `
+        -Body ([System.Text.Encoding]::UTF8.GetBytes($tagBody)) -TimeoutSec 60
     Ok "tag 已在 GitHub 创建"
 } catch {
     Die ("建 tag 失败: " + $_.Exception.Message)
@@ -192,9 +256,9 @@ try {
 Step 5 $TOTAL "生成版本说明"
 
 if (-not $Notes) {
-    if ($NotesFile -and (Test-Path $NotesFile)) {
-        $Notes = [System.IO.File]::ReadAllText($NotesFile, [System.Text.Encoding]::UTF8)
-        Ok ("从 " + $NotesFile + " 读取说明（" + $Notes.Length + " 字符）")
+    if ($NotesFromFile) {
+        $Notes = $NotesFromFile
+        Ok ("使用 -NotesFile 的说明（" + $Notes.Length + " 字符）")
     } else {
         # 自动收集上一个 tag 以来的提交
         $prevTag = Invoke-Capture { git describe --tags --abbrev=0 "$Tag^" }
@@ -247,9 +311,8 @@ $relBody = @{
 } | ConvertTo-Json -Depth 5
 
 try {
-    $rel = Invoke-RestMethod -Method Post -Uri "$Api/releases" -Headers $Hdr `
-        -Body ([System.Text.Encoding]::UTF8.GetBytes($relBody)) `
-        -ContentType "application/json; charset=utf-8" -TimeoutSec 60
+    $rel = Invoke-Api -Method Post -Uri "$Api/releases" -Headers $Hdr `
+        -Body ([System.Text.Encoding]::UTF8.GetBytes($relBody)) -TimeoutSec 60
     Ok ("Release 已创建，id = " + $rel.id)
 } catch {
     Die ("建 Release 失败: " + $_.Exception.Message)
@@ -261,15 +324,18 @@ $uploadUrl = $rel.upload_url -replace '\{\?name,label\}',''
 $hUp = $Hdr.Clone()
 $hUp["Content-Type"] = "application/zip"
 try {
-    $asset = Invoke-RestMethod -Method Post -Uri ($uploadUrl + "?name=vedio-concentrator-bundle.zip") `
-        -Headers $hUp -InFile $bundle -TimeoutSec 600
+    # 附件走 Body 传 byte[]：Invoke-Api 内部重试时需要能重复提交，
+    # 而 -InFile 只在单次调用里有效，重试会失败。
+    $asset = Invoke-Api -Method Post -Uri ($uploadUrl + "?name=vedio-concentrator-bundle.zip") `
+        -Headers $hUp -Body ([System.IO.File]::ReadAllBytes($bundle)) `
+        -ContentType "application/zip" -TimeoutSec 600 -Tries 3
     Ok ("上传成功: " + $asset.name + "  " + $asset.size + " 字节")
 } catch {
     Die ("上传附件失败: " + $_.Exception.Message)
 }
 
 # 关键校验：附件必须在，且字节数与本地一致
-$verify = Invoke-RestMethod -Uri "$Api/releases/$($rel.id)" -Headers $Hdr -TimeoutSec 60
+$verify = Invoke-Api -Uri "$Api/releases/$($rel.id)" -Headers $Hdr -TimeoutSec 60
 $assets = @($verify.assets)
 if ($assets.Count -eq 0) {
     Bad "Release 里没有附件！"

@@ -19,7 +19,7 @@ ROOT = os.path.dirname(HERE)
 DIST = os.path.join(ROOT, "dist")
 
 SKILL_NAME = "vedio-concentrator"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 DOC_FILES = ["SKILL.md", "reference.md"]
 SCRIPT_FILES = ["v2mm.py", "vcproxy.py", "render_mindmap.py", "setup_check.py",

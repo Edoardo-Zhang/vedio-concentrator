@@ -98,9 +98,30 @@ if ($NoPush) {
             } else {
                 Ok ("已提交: " + $Message)
                 Write-Host "      正在推送 ..." -ForegroundColor DarkGray
-                & git push
-                if ($LASTEXITCODE -ne 0) {
-                    Bad "推送失败（网络？试试 git config --global http.proxy http://127.0.0.1:7897）"
+                # 推送重试。两个实测得到的必要设计：
+                # 1) 用 Start-Process 而不是 & git：Invoke-Quiet 里的 `| Out-Null`
+                #    会把 $LASTEXITCODE 重置掉，导致成功也被判成失败。
+                # 2) 降级 HTTP/1.1：国内代理对 git 默认的 HTTP/2 常报
+                #    "TLS connect error: unexpected eof while reading"。
+                $pushed = $false
+                $attempts = @(
+                    @(),
+                    @("-c", "http.version=HTTP/1.1"),
+                    @("-c", "http.version=HTTP/1.1"),
+                    @("-c", "http.version=HTTP/1.1", "-c", "http.postBuffer=524288000")
+                )
+                for ($k = 0; $k -lt $attempts.Count; $k++) {
+                    if ($k -gt 0) {
+                        Write-Host ("      第 " + ($k + 1) + " 次尝试...") -ForegroundColor DarkYellow
+                        Start-Sleep -Seconds 3
+                    }
+                    $gitArgs = $attempts[$k] + @("push")
+                    $gp = Start-Process -FilePath "git" -ArgumentList $gitArgs `
+                        -NoNewWindow -Wait -PassThru
+                    if ($gp.ExitCode -eq 0) { $pushed = $true; break }
+                }
+                if (-not $pushed) {
+                    Bad "推送失败（网络）。手动重试：cd 到仓库执行 git push；仍失败则 git config http.version HTTP/1.1"
                 } else {
                     Ok "已推送到 GitHub"
                 }
