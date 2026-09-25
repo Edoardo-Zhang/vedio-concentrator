@@ -87,6 +87,11 @@ python build_dist.py       # 产出 dist/*.zip 和 SHA256SUMS.txt
 如果你是仓库维护者，想把项目发到 GitHub 并长期更新，见 **[GITHUB-GUIDE.md](GITHUB-GUIDE.md)**
 ——从建仓库、传代码、发 Release 到日常维护和故障排查，一步步写给新手看。
 
+日常改动只需**双击仓库根目录的 `更新.cmd`**，它会自动完成：检查多份拷贝有没有分叉 →
+打包 zip → 同步到你本机装的那份 → 提交并推送到 GitHub。
+
+三份拷贝的关系、版本号规则、Release 流程见 **[维护必读.md](维护必读.md)**。
+
 ### 安装到哪了 / 怎么卸载
 
 | 内容 | 位置 |
